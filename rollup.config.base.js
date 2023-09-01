@@ -46,12 +46,6 @@ const modules = {
     globalName: 'GrafanaFaroInstrumentationFetch',
     externals: [],
   },
-  instrumentationK6Browser: {
-    name: '@grafana/faro-instrumentation-k6-browser',
-    bundleName: 'faro-instrumentation-k6-browser',
-    globalName: 'GrafanaFaroInstrumentationK6Browser',
-    externals: [],
-  },
 };
 
 exports.getRollupConfigBase = (moduleName) => {
