@@ -5,6 +5,8 @@ import { createSession } from '../../metas';
 
 import { SessionInstrumentation } from './instrumentation';
 
+// TODO: update session tests for new session creator
+
 describe('SessionInstrumentation', () => {
   it('will send session start event on initialize', () => {
     const transport = new MockTransport();

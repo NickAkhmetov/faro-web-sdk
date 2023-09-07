@@ -1,5 +1,7 @@
 import { BaseInstrumentation, Conventions, Meta, MetaSession, VERSION } from '@grafana/faro-core';
 
+import { userSessionManager } from './sessionManager';
+
 // all this does is send SESSION_START event
 export class SessionInstrumentation extends BaseInstrumentation {
   readonly name = '@grafana/faro-web-sdk:instrumentation-session';
@@ -14,6 +16,7 @@ export class SessionInstrumentation extends BaseInstrumentation {
 
     if (session && session !== this.notifiedSession) {
       this.notifiedSession = session;
+
       // no need to add attributes and session id, they are included as part of meta
       // automatically
       this.api.pushEvent(Conventions.EventNames.SESSION_START, {}, undefined, { skipDedupe: true });
@@ -21,6 +24,19 @@ export class SessionInstrumentation extends BaseInstrumentation {
   }
 
   initialize() {
+    // TODO: Add an onApiExecute lifecycle event to each Faro API which is called on every api call
+    // TODO: ... this is because the point in time when the before send hook is called can be influenced by the user (batch timeout)
+    // TODO: ... for the sake of simplicity and reviewability I'll keep it here for the PoC
+    // TODO: maybe the possible delay is not that important
+
+    const { onActivity } = userSessionManager();
+    const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
+
+    addBeforeSendHooks(...getBeforeSendHooks(), () => {
+      onActivity();
+      return null;
+    });
+
     this.sendSessionStartEvent(this.metas.value);
 
     this.metas.addListener(this.sendSessionStartEvent.bind(this));

@@ -1,9 +1,12 @@
-import { genShortID } from '@grafana/faro-core';
 import type { MetaSession } from '@grafana/faro-core';
 
+import { getOrCreateUserSession } from '../../instrumentations/session';
+
 export function createSession(attributes?: MetaSession['attributes']): MetaSession {
+  const { sessionId } = getOrCreateUserSession();
+
   return {
-    id: genShortID(),
+    id: sessionId,
     attributes,
   };
 }

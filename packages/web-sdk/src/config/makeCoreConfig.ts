@@ -5,10 +5,11 @@ import {
   defaultInternalLoggerLevel,
   defaultUnpatchedConsole,
 } from '@grafana/faro-core';
-import type { Config, Transport } from '@grafana/faro-core';
+import type { Config, MetaSession, Transport } from '@grafana/faro-core';
 
 import { defaultEventDomain } from '../consts';
 import { parseStacktrace } from '../instrumentations';
+import { createAndSaveNewUserSession } from '../instrumentations/session';
 import { createSession, defaultMetas, defaultViewMeta } from '../metas';
 import { FetchTransport } from '../transports';
 
@@ -37,6 +38,16 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     internalLogger.error('either "url" or "transports" must be defined');
   }
 
+  function initializeSession(browserConfig: any): MetaSession {
+    const customSessionId = browserConfig.session?.id;
+    if (customSessionId) {
+      createAndSaveNewUserSession(customSessionId);
+      return browserConfig.session;
+    }
+
+    return { ...createSession(), ...(browserConfig.session ?? {}) };
+  }
+
   return {
     app: browserConfig.app,
     batching: {
@@ -58,7 +69,7 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     beforeSend: browserConfig.beforeSend,
     eventDomain: browserConfig.eventDomain ?? defaultEventDomain,
     ignoreErrors: browserConfig.ignoreErrors,
-    session: browserConfig.session ?? createSession(),
+    session: initializeSession(browserConfig),
     user: browserConfig.user,
     view: browserConfig.view ?? defaultViewMeta,
   };
