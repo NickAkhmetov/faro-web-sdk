@@ -24,10 +24,12 @@ export class SessionInstrumentation extends BaseInstrumentation {
   }
 
   initialize() {
-    // TODO: Add an onApiExecute lifecycle event to each Faro API which is called on every api call
+    // TODO: Add an "onApiExecute" lifecycle event to each Faro API which is called on every api call
     // TODO: ... this is because the point in time when the before send hook is called can be influenced by the user (batch timeout)
     // TODO: ... for the sake of simplicity and reviewability I'll keep it here for the PoC
     // TODO: maybe the possible delay is not that important
+
+    // TODO: a user can completely mutate or overwrite the beforeSendHooks list.
 
     const { onActivity } = userSessionManager();
     const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;

@@ -38,16 +38,6 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     internalLogger.error('either "url" or "transports" must be defined');
   }
 
-  function initializeSession(browserConfig: any): MetaSession {
-    const customSessionId = browserConfig.session?.id;
-    if (customSessionId) {
-      createAndSaveNewUserSession(customSessionId);
-      return browserConfig.session;
-    }
-
-    return { ...createSession(), ...(browserConfig.session ?? {}) };
-  }
-
   return {
     app: browserConfig.app,
     batching: {
@@ -73,4 +63,14 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     user: browserConfig.user,
     view: browserConfig.view ?? defaultViewMeta,
   };
+}
+
+function initializeSession(browserConfig: any): MetaSession {
+  const customSessionId = browserConfig.session?.id;
+  if (customSessionId) {
+    createAndSaveNewUserSession(customSessionId);
+    return browserConfig.session;
+  }
+
+  return { ...createSession(), ...(browserConfig.session ?? {}) };
 }

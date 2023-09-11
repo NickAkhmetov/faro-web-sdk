@@ -14,7 +14,7 @@ const STORAGE_UPDATE_DELAY = 4 * 1000; // 4 seconds
 
 export const SESSION_STORAGE_KEY = '__FARO_SESSION__';
 
-export function createUserSession(sessionId: string): FaroUserSession {
+export function createUserSession(sessionId: string): Readonly<FaroUserSession> {
   const now = dateNow();
 
   return {
@@ -48,28 +48,67 @@ export function receiveUserSession(): FaroUserSession | null {
   return null;
 }
 
-export function userSessionActive(session: FaroUserSession): boolean {
+export interface UserSessionState {
+  isActive: boolean;
+  reason?: string;
+}
+
+export const reasonMaxSessionTimeout = 'max-session-timeout';
+export const reasonInactivityTimeout = 'inactivity-timeout';
+export const reasonAllTimeout = 'all-timeout';
+
+export function getUserSessionActiveState(session: FaroUserSession | null): Readonly<UserSessionState> {
   if (!session) {
-    return false;
+    return { isActive: false };
   }
 
   const now = dateNow();
 
+  let reason: undefined | string;
   const maxDurationValid = now - session.started < SESSION_TIMEOUT;
-  const maxInactivityPeriodValid = now - session.lastActivity < SESSION_INACTIVITY_TIMEOUT;
+  if (!maxDurationValid) {
+    reason = 'max-session-timeout';
+  }
 
-  return maxDurationValid && maxInactivityPeriodValid;
+  const maxInactivityPeriodValid = now - session.lastActivity < SESSION_INACTIVITY_TIMEOUT;
+  if (!maxInactivityPeriodValid) {
+    reason = 'inactivity-timeout';
+  }
+
+  if (!maxDurationValid && !maxDurationValid) {
+    reason = 'all-timeout';
+  }
+
+  const timingsOrderValid = session.lastActivity <= session.started + SESSION_TIMEOUT;
+
+  return {
+    isActive: maxDurationValid && maxInactivityPeriodValid && timingsOrderValid,
+    reason,
+  };
 }
 
-export function getOrCreateUserSession(): FaroUserSession {
+export function getOrExpandOrCreateUserSession(): FaroUserSession {
   const session = receiveUserSession();
-  const isValidSession = session && userSessionActive(session);
-  const sessionId = isValidSession ? session.sessionId : genShortID();
-  const userSession = createUserSession(sessionId);
+  const { isActive, reason } = getUserSessionActiveState(session);
 
-  storeUserSession(userSession);
+  if (isActive) {
+    const userSession = createUserSession(session!.sessionId);
+    storeUserSession(userSession);
+    return userSession;
+  }
 
-  return userSession;
+  if (reason === reasonInactivityTimeout || reason === reasonMaxSessionTimeout) {
+    // TODO: expand user session
+    return createUserSession(genShortID());
+  }
+
+  if (reason === reasonAllTimeout || !reason) {
+    const session = createUserSession(genShortID());
+    storeUserSession(session);
+    return session;
+  }
+
+  return {} as FaroUserSession;
 }
 
 export function createAndSaveNewUserSession(sessionId?: string): void {
@@ -87,7 +126,7 @@ export function userSessionManager() {
       started = now;
     }
 
-    const isActive = userSessionActive({ lastActivity, started, sessionId: '' });
+    const { isActive } = getUserSessionActiveState({ lastActivity, started, sessionId: '' });
 
     if (isActive) {
       lastActivity = now;
@@ -99,6 +138,10 @@ export function userSessionManager() {
           // TODO: persist to local storage
         }
       }, STORAGE_UPDATE_DELAY);
+      // TODO: if we keep this mechanism add STORAGE_UPDATE_DELAY to the calculations in getUserSessionActiveState()
+    } else {
+      // TODO:
+      getOrExpandOrCreateUserSession();
     }
   }
 
