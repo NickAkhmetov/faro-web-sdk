@@ -9,9 +9,9 @@ export interface FaroUserSession {
   started: number;
 }
 
-const SESSION_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hrs
-const SESSION_INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-const STORAGE_UPDATE_DELAY = 4 * 1000; // 4 seconds
+const SESSION_TIMEOUT = 4 * 60 * 60 * 1000; // n hrs
+const SESSION_INACTIVITY_TIMEOUT = 15 * 60 * 1000; // n minutes
+const STORAGE_UPDATE_DELAY = 1 * 1000; // n seconds
 
 export const STORAGE_KEY = '__FARO_SESSION__';
 
@@ -33,17 +33,11 @@ export function storeUserSession(session: FaroUserSession): void {
   setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
-export function storeUserSessionAsync(session: FaroUserSession): void {
-  new Promise(() => {
-    storeUserSession(session);
-  });
-}
-
 export function receiveUserSession(): FaroUserSession | null {
-  const sessionStr = getItem(STORAGE_KEY);
+  const storedSession = getItem(STORAGE_KEY);
 
-  if (sessionStr) {
-    return JSON.parse(sessionStr) as FaroUserSession;
+  if (storedSession) {
+    return JSON.parse(storedSession) as FaroUserSession;
   }
 
   return null;
@@ -99,7 +93,7 @@ export function getOrExpandOrCreateUserSession(): FaroUserSession {
   }
 
   if (reason === reasonInactivityTimeout || reason === reasonMaxSessionTimeout) {
-    // TODO: expand user session
+    createUserSession(session!.sessionId);
     return createUserSession(genShortID());
   }
 
