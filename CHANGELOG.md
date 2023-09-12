@@ -2,6 +2,8 @@
 
 ## Next
 
+- [FEAT]: Detect if Faro is running inside K6 browser to distinguish between lab and field data (#263).
+
 ## 1.2.0
 
 - Feat: Enable users to add contextual attributes to measurement API payload ([#254](https://github.com/grafana/faro-web-sdk/issues/254))
