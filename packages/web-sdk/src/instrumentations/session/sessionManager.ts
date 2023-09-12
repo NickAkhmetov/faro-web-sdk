@@ -1,4 +1,4 @@
-import { dateNow, genShortID } from '@grafana/faro-core';
+import { dateNow, deepEqual, genShortID } from '@grafana/faro-core';
 
 import { throttle } from '../../utils';
 import { getItem, removeItem, setItem } from '../../utils/webStorage';
@@ -111,16 +111,40 @@ export function userSessionManager() {
     STORAGE_UPDATE_DELAY
   );
 
+  // const debouncedSessionUpdate = debounce(() => {
+  //   storeUserSession(getOrExpandOrCreateUserSession());
+  //   console.log('debounce after', new Date());
+  // }, STORAGE_UPDATE_DELAY);
+
   function initialize() {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        console.log('visibilitychange');
         storeUserSession(getOrExpandOrCreateUserSession());
       }
+    });
+
+    window.addEventListener('storage', function (event: StorageEvent) {
+      if (event.key !== STORAGE_KEY) {
+        return;
+      }
+
+      console.log('storage event => before');
+
+      const session = receiveUserSession();
+      if (deepEqual(JSON.parse(event.newValue ?? ''), session)) {
+        return;
+      }
+
+      console.log('storage event => after');
+
+      storeUserSession(session!);
     });
   }
 
   return {
     initialize,
     onActivity: throttledSessionUpdate,
+    // onActivity2: debouncedSessionUpdate,
   };
 }

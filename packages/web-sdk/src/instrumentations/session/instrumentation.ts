@@ -41,12 +41,13 @@ export class SessionInstrumentation extends BaseInstrumentation {
       initialize();
 
       const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
-      addBeforeSendHooks(...getBeforeSendHooks(), () => {
+      addBeforeSendHooks(...getBeforeSendHooks(), (item: any) => {
+        console.log('debounce before', new Date());
         onActivity();
-        return null;
+        return item;
       });
     } else {
-      this.logDebug('Local Storage not supported or disabled. Fall back to in-memory session management');
+      this.logDebug('Local Storage not supported or disabled. Falling back to in-memory session management');
     }
 
     this.sendSessionStartEvent(this.metas.value);
