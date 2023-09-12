@@ -58,7 +58,7 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     beforeSend: browserConfig.beforeSend,
     eventDomain: browserConfig.eventDomain ?? defaultEventDomain,
     ignoreErrors: browserConfig.ignoreErrors,
-    session: browserConfig.session ?? createSession(),
+    session: { ...createSession(), ...(browserConfig.session ?? {}) },
     user: browserConfig.user,
     view: browserConfig.view ?? defaultViewMeta,
   };

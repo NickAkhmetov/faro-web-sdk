@@ -15,11 +15,11 @@ const STORAGE_UPDATE_DELAY = 1 * 1000; // n seconds
 
 export const STORAGE_KEY = '__FARO_SESSION__';
 
-export function createUserSession(sessionId: string): Readonly<FaroUserSession> {
+export function createUserSession(sessionId?: string): Readonly<FaroUserSession> {
   const now = dateNow();
 
   return {
-    sessionId,
+    sessionId: sessionId ?? genShortID(),
     lastActivity: now,
     started: now,
   };
@@ -87,27 +87,22 @@ export function getOrExpandOrCreateUserSession(): FaroUserSession {
   const { isActive, reason } = getUserSessionActiveState(session);
 
   if (isActive) {
-    const userSession = createUserSession(session!.sessionId);
-    storeUserSession(userSession);
-    return userSession;
+    // update user session timestamps
+    return createUserSession(session!.sessionId);
   }
 
+  // expand session
   if (reason === reasonInactivityTimeout || reason === reasonMaxSessionTimeout) {
-    createUserSession(session!.sessionId);
-    return createUserSession(genShortID());
+    return createUserSession(session!.sessionId);
   }
 
+  // create new session
   if (reason === reasonAllTimeout || !reason) {
-    const session = createUserSession(genShortID());
-    storeUserSession(session);
+    const session = createUserSession();
     return session;
   }
 
   return {} as FaroUserSession;
-}
-
-export function createAndStoreNewUserSession(sessionId?: string): void {
-  storeUserSession(createUserSession(sessionId ?? genShortID()));
 }
 
 export function userSessionManager() {
