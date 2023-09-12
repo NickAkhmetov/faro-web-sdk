@@ -5,11 +5,10 @@ import {
   defaultInternalLoggerLevel,
   defaultUnpatchedConsole,
 } from '@grafana/faro-core';
-import type { Config, MetaSession, Transport } from '@grafana/faro-core';
+import type { Config, Transport } from '@grafana/faro-core';
 
 import { defaultEventDomain } from '../consts';
 import { parseStacktrace } from '../instrumentations';
-import { createAndStoreNewUserSession } from '../instrumentations/session';
 import { createSession, defaultMetas, defaultViewMeta } from '../metas';
 import { FetchTransport } from '../transports';
 
@@ -59,18 +58,8 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
     beforeSend: browserConfig.beforeSend,
     eventDomain: browserConfig.eventDomain ?? defaultEventDomain,
     ignoreErrors: browserConfig.ignoreErrors,
-    session: initializeSession(browserConfig),
+    session: browserConfig.session ?? createSession(),
     user: browserConfig.user,
     view: browserConfig.view ?? defaultViewMeta,
   };
-}
-
-function initializeSession(browserConfig: any): MetaSession {
-  const customSessionId = browserConfig.session?.id;
-  if (customSessionId) {
-    createAndStoreNewUserSession(customSessionId);
-    return browserConfig.session;
-  }
-
-  return { ...createSession(), ...(browserConfig.session ?? {}) };
 }

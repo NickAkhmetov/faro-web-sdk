@@ -111,13 +111,21 @@ export function createAndStoreNewUserSession(sessionId?: string): void {
 }
 
 export function userSessionManager() {
-  const throttledSessionUpdate = throttle(getOrExpandOrCreateUserSession, STORAGE_UPDATE_DELAY);
+  const throttledSessionUpdate = throttle(
+    () => storeUserSession(getOrExpandOrCreateUserSession()),
+    STORAGE_UPDATE_DELAY
+  );
 
-  function onActivity() {
-    throttledSessionUpdate();
+  function initialize() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        storeUserSession(getOrExpandOrCreateUserSession());
+      }
+    });
   }
 
   return {
-    onActivity: onActivity,
+    initialize,
+    onActivity: throttledSessionUpdate,
   };
 }

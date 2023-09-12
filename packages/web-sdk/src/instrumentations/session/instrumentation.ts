@@ -1,5 +1,7 @@
 import { BaseInstrumentation, Conventions, Meta, MetaSession, VERSION } from '@grafana/faro-core';
 
+import { localStorageAvailable } from '../../utils';
+
 import { userSessionManager } from './sessionManager';
 
 // all this does is send SESSION_START event
@@ -26,18 +28,22 @@ export class SessionInstrumentation extends BaseInstrumentation {
   initialize() {
     // TODO: Add an "onApiExecute" lifecycle event to each Faro API which is called on every api call
     // TODO: ... this is because the point in time when the before send hook is called can be influenced by the user (batch timeout)
-    // TODO: ... for the sake of simplicity and reviewability I'll keep it here for the PoC
+    // TODO: ... for the sake of simplicity and reviewability I'll use the hook here for the PoC
     // TODO: maybe the possible delay is not that important
 
     // TODO: a user can completely mutate or overwrite the beforeSendHooks list.
 
-    const { onActivity } = userSessionManager();
-    const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
+    if (localStorageAvailable) {
+      const { initialize, onActivity } = userSessionManager();
+      const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
 
-    addBeforeSendHooks(...getBeforeSendHooks(), () => {
-      onActivity();
-      return null;
-    });
+      addBeforeSendHooks(...getBeforeSendHooks(), () => {
+        onActivity();
+        return null;
+      });
+    } else {
+      this.logDebug('Local Storage not supported or disabled. Fall back to in-memory session management');
+    }
 
     this.sendSessionStartEvent(this.metas.value);
 
