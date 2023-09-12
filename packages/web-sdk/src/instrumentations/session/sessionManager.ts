@@ -1,6 +1,7 @@
 import { dateNow, genShortID } from '@grafana/faro-core';
 
-import { getItem, setItem } from '../../utils/webStorage';
+import { throttle } from '../../utils';
+import { getItem, removeItem, setItem } from '../../utils/webStorage';
 
 export interface FaroUserSession {
   sessionId: string;
@@ -12,7 +13,7 @@ const SESSION_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hrs
 const SESSION_INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const STORAGE_UPDATE_DELAY = 4 * 1000; // 4 seconds
 
-export const SESSION_STORAGE_KEY = '__FARO_SESSION__';
+export const STORAGE_KEY = '__FARO_SESSION__';
 
 export function createUserSession(sessionId: string): Readonly<FaroUserSession> {
   const now = dateNow();
@@ -24,10 +25,12 @@ export function createUserSession(sessionId: string): Readonly<FaroUserSession> 
   };
 }
 
-export function removeUserSession() {}
+export function removeUserSession() {
+  removeItem(STORAGE_KEY);
+}
 
 export function storeUserSession(session: FaroUserSession): void {
-  setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
 export function storeUserSessionAsync(session: FaroUserSession): void {
@@ -36,10 +39,8 @@ export function storeUserSessionAsync(session: FaroUserSession): void {
   });
 }
 
-export function invalidateUserSession() {}
-
 export function receiveUserSession(): FaroUserSession | null {
-  const sessionStr = getItem(SESSION_STORAGE_KEY);
+  const sessionStr = getItem(STORAGE_KEY);
 
   if (sessionStr) {
     return JSON.parse(sessionStr) as FaroUserSession;
@@ -111,38 +112,15 @@ export function getOrExpandOrCreateUserSession(): FaroUserSession {
   return {} as FaroUserSession;
 }
 
-export function createAndSaveNewUserSession(sessionId?: string): void {
+export function createAndStoreNewUserSession(sessionId?: string): void {
   storeUserSession(createUserSession(sessionId ?? genShortID()));
 }
 
 export function userSessionManager() {
-  let lastActivity: number;
-  let started: number;
+  const throttledSessionUpdate = throttle(getOrExpandOrCreateUserSession, STORAGE_UPDATE_DELAY);
 
   function onActivity() {
-    const now = dateNow();
-    if (lastActivity == null || started == null) {
-      lastActivity = now;
-      started = now;
-    }
-
-    const { isActive } = getUserSessionActiveState({ lastActivity, started, sessionId: '' });
-
-    if (isActive) {
-      lastActivity = now;
-      started = now;
-
-      setTimeout(() => {
-        const session = receiveUserSession();
-        if (session) {
-          // TODO: persist to local storage
-        }
-      }, STORAGE_UPDATE_DELAY);
-      // TODO: if we keep this mechanism add STORAGE_UPDATE_DELAY to the calculations in getUserSessionActiveState()
-    } else {
-      // TODO:
-      getOrExpandOrCreateUserSession();
-    }
+    throttledSessionUpdate();
   }
 
   return {

@@ -9,7 +9,7 @@ import type { Config, MetaSession, Transport } from '@grafana/faro-core';
 
 import { defaultEventDomain } from '../consts';
 import { parseStacktrace } from '../instrumentations';
-import { createAndSaveNewUserSession } from '../instrumentations/session';
+import { createAndStoreNewUserSession } from '../instrumentations/session';
 import { createSession, defaultMetas, defaultViewMeta } from '../metas';
 import { FetchTransport } from '../transports';
 
@@ -68,7 +68,7 @@ export function makeCoreConfig(browserConfig: BrowserConfig): Config | undefined
 function initializeSession(browserConfig: any): MetaSession {
   const customSessionId = browserConfig.session?.id;
   if (customSessionId) {
-    createAndSaveNewUserSession(customSessionId);
+    createAndStoreNewUserSession(customSessionId);
     return browserConfig.session;
   }
 
