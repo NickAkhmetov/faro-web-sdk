@@ -1,7 +1,7 @@
-import { dateNow, deepEqual, genShortID } from '@grafana/faro-core';
+import { dateNow, genShortID } from '@grafana/faro-core';
 
 import { throttle } from '../../utils';
-import { getItem, removeItem, setItem } from '../../utils/webStorage';
+import { getItem, localStorageAvailable, removeItem, setItem } from '../../utils/webStorage';
 
 export interface FaroUserSession {
   sessionId: string;
@@ -105,46 +105,32 @@ export function getOrExpandOrCreateUserSession(): FaroUserSession {
   return {} as FaroUserSession;
 }
 
-export function userSessionManager() {
+// TODO: provide fallback mechanism if LocalStorage is disabled.
+export function userSessionManager(initialSessionId?: string) {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      storeUserSession(getOrExpandOrCreateUserSession());
+    }
+  });
+
   const throttledSessionUpdate = throttle(
     () => storeUserSession(getOrExpandOrCreateUserSession()),
     STORAGE_UPDATE_DELAY
   );
 
-  // const debouncedSessionUpdate = debounce(() => {
-  //   storeUserSession(getOrExpandOrCreateUserSession());
-  //   console.log('debounce after', new Date());
-  // }, STORAGE_UPDATE_DELAY);
-
-  function initialize() {
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        console.log('visibilitychange');
-        storeUserSession(getOrExpandOrCreateUserSession());
-      }
-    });
-
-    window.addEventListener('storage', function (event: StorageEvent) {
-      if (event.key !== STORAGE_KEY) {
-        return;
-      }
-
-      console.log('storage event => before');
-
-      const session = receiveUserSession();
-      if (deepEqual(JSON.parse(event.newValue ?? ''), session)) {
-        return;
-      }
-
-      console.log('storage event => after');
-
-      storeUserSession(session!);
-    });
-  }
+  const session = createUserSession(initialSessionId);
+  storeUserSession(session);
 
   return {
-    initialize,
     onActivity: throttledSessionUpdate,
-    // onActivity2: debouncedSessionUpdate,
   };
+}
+
+function getSessionManager() {
+  if (localStorageAvailable) {
+    return userSessionManager;
+  }
+
+  // Return in memory session manager
+  return {};
 }

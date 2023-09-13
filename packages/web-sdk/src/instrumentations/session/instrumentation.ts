@@ -2,7 +2,7 @@ import { BaseInstrumentation, Conventions, Meta, MetaSession, VERSION } from '@g
 
 import { localStorageAvailable } from '../../utils';
 
-import { createUserSession, storeUserSession, userSessionManager } from './sessionManager';
+import { userSessionManager } from './sessionManager';
 
 // all this does is send SESSION_START event
 export class SessionInstrumentation extends BaseInstrumentation {
@@ -34,15 +34,10 @@ export class SessionInstrumentation extends BaseInstrumentation {
     // TODO: a user can completely mutate or overwrite the beforeSendHooks list.
 
     if (localStorageAvailable) {
-      const session = createUserSession(this.metas.value.session?.id);
-      storeUserSession(session);
-
-      const { initialize, onActivity } = userSessionManager();
-      initialize();
+      const { onActivity } = userSessionManager(this.metas.value.session?.id);
 
       const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
       addBeforeSendHooks(...getBeforeSendHooks(), (item: any) => {
-        console.log('debounce before', new Date());
         onActivity();
         return item;
       });
