@@ -33,10 +33,10 @@ export class SessionInstrumentation extends BaseInstrumentation {
 
     const { type, manager } = getSessionManager();
 
-    if (type === sessionManagerTypePersistent) {
-      this.logDebug('Initialize persistent user session manager');
+    this.logDebug('init session instrumentation');
 
-      const { onActivity } = manager(this.metas.value.session?.id);
+    if (type === sessionManagerTypePersistent) {
+      const { onActivity } = manager();
 
       const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
 
@@ -47,7 +47,7 @@ export class SessionInstrumentation extends BaseInstrumentation {
     }
 
     if (type === sessionManagerTypeInMemory) {
-      this.logDebug('Initialize in-memory user session manager');
+      // TODO
     }
 
     this.sendSessionStartEvent(this.metas.value);

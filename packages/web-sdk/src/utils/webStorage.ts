@@ -1,3 +1,5 @@
+import { faro } from '@grafana/faro-core';
+
 type StorageMechanism = 'sessionStorage' | 'localStorage';
 
 function isWebStorageAvailable(type: StorageMechanism): boolean {
@@ -9,9 +11,10 @@ function isWebStorageAvailable(type: StorageMechanism): boolean {
     storage.setItem(testItem, testItem);
     storage.removeItem(testItem);
     return true;
-  } catch (e) {
+  } catch (error) {
     // the above can throw
     // TODO: Log
+    faro.internalLogger?.info(`Web storage of type ${type} is not available. Reason: ${error}`);
     return false;
   }
 }
