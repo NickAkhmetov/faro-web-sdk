@@ -183,11 +183,3 @@ export function getSessionManager(): SessionManager {
 
   return { manager: inMemoryUserSessionsManager, type: sessionManagerTypeInMemory };
 }
-
-// export function isPersistentSessionManager(manager: any): manager is PersistentUserSessionManager {
-//   return typeof manager === 'function' && manager.name === 'persistentUserSessionsManager';
-// }
-
-// export function isInMemorySessionManager(manager: any): manager is InMemoryUserSessionsManager {
-//   return typeof manager === 'function' && manager.name === 'inMemoryUserSessionsManager';
-// }
