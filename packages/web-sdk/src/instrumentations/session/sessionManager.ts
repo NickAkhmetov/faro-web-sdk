@@ -154,11 +154,29 @@ interface InMemoryUserSessionsManager {
 
 export function inMemoryUserSessionsManager(): InMemoryUserSessionsManager {
   faro.internalLogger?.debug('Initialize in-memory user session manager');
-  const session: Partial<FaroUserSession> = createUserSessionState(faro.metas.value.session?.id);
+  let session: FaroUserSession = createUserSessionState(faro.metas.value.session?.id);
 
   function onActivity() {
+    const { isActive, reason } = getUserSessionActiveState(session);
     const now = dateNow();
-    session.lastActivity = now;
+
+    if (isActive) {
+      // update user session timestamps
+      faro.internalLogger?.debug('Update in-memory user session.');
+      session.lastActivity = now;
+    }
+
+    // expand session
+    if (reason === reasonInactivityTimeout || reason === reasonMaxSessionTimeout) {
+      faro.internalLogger?.debug('Expand in-memory user session.');
+      session = session = createUserSessionState(session.sessionId);
+    }
+
+    // create new session
+    if (reason === reasonAllTimeout || !reason) {
+      faro.internalLogger?.debug('Create new in-memory user session.');
+      session = createUserSessionState();
+    }
   }
 
   return {
