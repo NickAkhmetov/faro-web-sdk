@@ -105,8 +105,12 @@ export function getOrExpandOrCreateUserSession(): FaroUserSession {
   return {} as FaroUserSession;
 }
 
+interface PersistentUserSessionManager {
+  onActivity: () => void;
+}
+
 // TODO: provide fallback mechanism if LocalStorage is disabled.
-export function userSessionManager(initialSessionId?: string) {
+export function persistentUserSessionsManager(initialSessionId?: string): PersistentUserSessionManager {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       storeUserSession(getOrExpandOrCreateUserSession());
@@ -126,11 +130,39 @@ export function userSessionManager(initialSessionId?: string) {
   };
 }
 
-function getSessionManager() {
+interface InMemoryUserSessionsManager {
+  onActivity: () => void;
+}
+
+export function inMemoryUserSessionsManager(initialSessionId?: string): InMemoryUserSessionsManager {
+  return {
+    onActivity: () => {
+      console.log('initialSessionId', initialSessionId);
+    },
+  };
+}
+
+export const sessionManagerTypePersistent = 'persistent';
+export const sessionManagerTypeInMemory = 'in-memory';
+
+interface SessionManager {
+  manager: (initialSessionId?: string | undefined) => PersistentUserSessionManager | InMemoryUserSessionsManager;
+  type: typeof sessionManagerTypePersistent | typeof sessionManagerTypeInMemory;
+}
+
+export function getSessionManager(): SessionManager {
+  // TODO: respect user choice once implemented
   if (localStorageAvailable) {
-    return userSessionManager;
+    return { manager: persistentUserSessionsManager, type: sessionManagerTypePersistent };
   }
 
-  // Return in memory session manager
-  return {};
+  return { manager: inMemoryUserSessionsManager, type: sessionManagerTypeInMemory };
 }
+
+// export function isPersistentSessionManager(manager: any): manager is PersistentUserSessionManager {
+//   return typeof manager === 'function' && manager.name === 'persistentUserSessionsManager';
+// }
+
+// export function isInMemorySessionManager(manager: any): manager is InMemoryUserSessionsManager {
+//   return typeof manager === 'function' && manager.name === 'inMemoryUserSessionsManager';
+// }

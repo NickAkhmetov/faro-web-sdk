@@ -1,8 +1,6 @@
 import { BaseInstrumentation, Conventions, Meta, MetaSession, VERSION } from '@grafana/faro-core';
 
-import { localStorageAvailable } from '../../utils';
-
-import { userSessionManager } from './sessionManager';
+import { getSessionManager, sessionManagerTypeInMemory, sessionManagerTypePersistent } from './sessionManager';
 
 // all this does is send SESSION_START event
 export class SessionInstrumentation extends BaseInstrumentation {
@@ -33,16 +31,23 @@ export class SessionInstrumentation extends BaseInstrumentation {
 
     // TODO: a user can completely mutate or overwrite the beforeSendHooks list.
 
-    if (localStorageAvailable) {
-      const { onActivity } = userSessionManager(this.metas.value.session?.id);
+    const { type, manager } = getSessionManager();
+
+    if (type === sessionManagerTypePersistent) {
+      this.logDebug('Initialize persistent user session manager');
+
+      const { onActivity } = manager(this.metas.value.session?.id);
 
       const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
+
       addBeforeSendHooks(...getBeforeSendHooks(), (item: any) => {
         onActivity();
         return item;
       });
-    } else {
-      this.logDebug('Local Storage not supported or disabled. Falling back to in-memory session management');
+    }
+
+    if (type === sessionManagerTypeInMemory) {
+      this.logDebug('Initialize in-memory user session manager');
     }
 
     this.sendSessionStartEvent(this.metas.value);
