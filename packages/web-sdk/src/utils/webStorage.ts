@@ -2,7 +2,7 @@ import { faro } from '@grafana/faro-core';
 
 type StorageMechanism = 'sessionStorage' | 'localStorage';
 
-function isWebStorageAvailable(type: StorageMechanism): boolean {
+export function isWebStorageAvailable(type: StorageMechanism): boolean {
   try {
     let storage;
     storage = window[type];
@@ -13,13 +13,12 @@ function isWebStorageAvailable(type: StorageMechanism): boolean {
     return true;
   } catch (error) {
     // the above can throw
-    // TODO: Log
     faro.internalLogger?.info(`Web storage of type ${type} is not available. Reason: ${error}`);
     return false;
   }
 }
 
-export const localStorageAvailable = isWebStorageAvailable('localStorage');
+const localStorageAvailable = isWebStorageAvailable('localStorage');
 
 export function getItem(key: string): string | null {
   if (localStorageAvailable) {
@@ -34,7 +33,7 @@ export function setItem(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      // TODO: debug log
+      faro.internalLogger?.info(`Could not set item in web storage. Reason: ${error}`);
     }
   }
 }

@@ -1,6 +1,6 @@
 import { BaseInstrumentation, Conventions, Meta, MetaSession, VERSION } from '@grafana/faro-core';
 
-import { getSessionManager, sessionManagerTypeInMemory, sessionManagerTypePersistent } from './sessionManager';
+import { getSessionManager } from './sessionManager';
 
 // all this does is send SESSION_START event
 export class SessionInstrumentation extends BaseInstrumentation {
@@ -35,7 +35,7 @@ export class SessionInstrumentation extends BaseInstrumentation {
 
     this.logDebug('init session instrumentation');
 
-    if (type === sessionManagerTypePersistent) {
+    if (type) {
       const { onActivity } = manager();
 
       const { addBeforeSendHooks, getBeforeSendHooks } = this.transports;
@@ -44,10 +44,6 @@ export class SessionInstrumentation extends BaseInstrumentation {
         onActivity();
         return item;
       });
-    }
-
-    if (type === sessionManagerTypeInMemory) {
-      // TODO
     }
 
     this.sendSessionStartEvent(this.metas.value);

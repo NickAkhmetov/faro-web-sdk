@@ -1,7 +1,7 @@
 import { dateNow, faro, genShortID } from '@grafana/faro-core';
 
 import { throttle } from '../../utils';
-import { getItem, localStorageAvailable, removeItem, setItem } from '../../utils/webStorage';
+import { getItem, isWebStorageAvailable, removeItem, setItem } from '../../utils/webStorage';
 
 export interface FaroUserSession {
   sessionId: string;
@@ -57,7 +57,7 @@ export const reasonInactivityTimeout = 'inactivity-timeout';
 export const reasonAllTimeout = 'all-timeout';
 
 export function getUserSessionActiveState(session: FaroUserSession | null): Readonly<UserSessionState> {
-  faro.internalLogger?.debug(`Get user session active state for session: ${session}.`);
+  faro.internalLogger?.debug(`Get user session active state.`);
 
   if (!session) {
     return { isActive: false };
@@ -194,8 +194,8 @@ interface SessionManager {
 
 export function getSessionManager(): SessionManager {
   faro.internalLogger?.debug('Get session manager');
-  // TODO: respect user choice once implemented
-  if (localStorageAvailable) {
+  // TODO: respect user choice to use either mechanism once implemented
+  if (isWebStorageAvailable('localStorage')) {
     return { manager: persistentUserSessionsManager, type: sessionManagerTypePersistent };
   }
 
